@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blueprint"
+  short_description: "Codex automation blueprint and workflow design"
+  default_prompt: "Use $blueprint to interview me and write a Codex automation blueprint."

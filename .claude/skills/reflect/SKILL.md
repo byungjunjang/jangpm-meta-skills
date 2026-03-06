@@ -1,6 +1,6 @@
 ---
 name: reflect
-description: A skill for wrapping up a session — summarizing work done, updating docs, and logging learnings. Trigger on "/reflect", "reflect", "session reflect", or "end session".
+description: A skill for wrapping up a session — summarizing work done, updating docs, and logging learnings. Trigger on "/reflect", "reflect", "session reflect", "end session", "세션 정리", "오늘 한 거 정리", or "마무리". Use this skill at the end of any substantial work session (30+ minutes), when the user says "done", "wrap up", "what did we do", or when a significant feature or milestone is completed — even if they don't explicitly ask for reflection.
 ---
 
 # reflect
@@ -44,9 +44,9 @@ This `PROJECT_STATE` will be passed as context to each Phase 1 agent.
 
 ## Step 2: Phase 1 — Parallel Analysis
 
-**CRITICAL INSTRUCTION: Launch ALL 4 Task tool calls in a SINGLE response. Do NOT wait for one agent to finish before launching the next. All 4 must be launched simultaneously.**
+Launch all 4 agents in a single response — running them sequentially would take 4x longer, and since the agents don't depend on each other's results, parallel execution is both faster and produces better analysis because each agent works from the same unbiased project state.
 
-Use the Task tool with `subagent_type: "general-purpose"` for each agent:
+Use the Agent tool with `subagent_type: "general-purpose"` for each:
 
 ### Task 1 — doc-updater
 

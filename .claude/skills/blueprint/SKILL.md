@@ -1,6 +1,6 @@
 ---
 name: blueprint
-description: Agentic system design blueprint generator. Interviews the user to understand a task they want to automate, then produces a comprehensive integrated design document (.md file) that serves as a concrete implementation plan for Claude Code. The design document includes task context, workflow definition with LLM vs code boundaries, and implementation spec (folder structure, agent architecture, skills/scripts list, sub-agent design). Trigger on "/blueprint", "blueprint", "에이전트 설계", "설계서 만들어", "agentic workflow design", or any request to design/plan an agent or automation system.
+description: Agentic system design blueprint generator. Interviews the user to understand a task they want to automate, then produces a comprehensive integrated design document (.md file) that serves as a concrete implementation plan for Claude Code. The design document includes task context, workflow definition with LLM vs code boundaries, and implementation spec (folder structure, agent architecture, skills/scripts list, sub-agent design). Trigger on "/blueprint", "blueprint", "에이전트 설계", "설계서 만들어", "agentic workflow design", or any request to design/plan an agent or automation system. Use this skill whenever the user mentions automation design, workflow planning, agent architecture, system blueprinting, multi-step AI workflow planning, or wants to structure any complex task into an agentic system — even if they don't explicitly say "blueprint".
 ---
 
 # Blueprint

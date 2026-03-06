@@ -1,6 +1,6 @@
 ---
 name: deep-dive
-description: Interview user in-depth to create a detailed spec. Use when the user wants to deeply explore requirements, clarify a task, or create a specification document. Trigger on "/deep-dive", "deep dive", "interview me", or "create a spec".
+description: Interview user in-depth to create a detailed spec. Use when the user wants to deeply explore requirements, clarify a task, or create a specification document. Trigger on "/deep-dive", "deep dive", "interview me", "create a spec", "요구사항 정리", "기획서 만들어", or "스펙 작성". Also trigger when the user seems unsure about what they want and needs structured questioning to figure it out — e.g., requests to flesh out an idea, write a PRD, clarify scope, explore edge cases, or when they say things like "I have a rough idea but need to think it through".
 ---
 
 # deep-dive

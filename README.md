@@ -1,46 +1,58 @@
-# Jangpm Agent Workflow — Claude Code Skills
+# Jangpm Meta Skills for Claude Code and Codex
 
-Claude Code에서 에이전틱 워크플로우를 설계하고 실행하는 데 사용하는 스킬 모음입니다.
+에이전트 시스템을 설계하고 요구사항을 파고들고 세션을 마무리하기 위한 메타 스킬 모음입니다.
+
+- Claude Code 배포본: `.claude/`
+- Codex 배포본: `.codex/skills/`
 
 ## 포함된 스킬
 
-| 스킬 | 트리거 | 설명 |
-|------|--------|------|
-| **blueprint** | `/blueprint` | 자동화할 작업을 인터뷰로 파악한 뒤, Claude Code 구현에 바로 쓸 수 있는 에이전트 시스템 설계서(`.md`)를 생성 |
-| **deep-dive** | `/deep-dive` | 요구사항을 심층 인터뷰로 탐색한 뒤, 스펙 문서를 작성하거나 기존 문서를 업데이트 |
-| **reflect** | `/reflect` | 세션 종료 시 4개 에이전트를 병렬 실행해 문서 업데이트·자동화 아이디어·학습 내용·다음 액션을 정리 |
+| Skill | 역할 | Claude Code | Codex |
+|---|---|---|---|
+| `blueprint` | 자동화/에이전트 시스템 설계서 작성 | `/blueprint` 커맨드 + skill | `blueprint` 또는 `$blueprint` |
+| `deep-dive` | 다회차 인터뷰로 상세 스펙 문서 작성 | `/deep-dive` 커맨드 + skill | `deep-dive` 또는 `$deep-dive` |
+| `reflect` | 작업 세션 정리, 문서 반영 포인트, 다음 액션 도출 | `/reflect` 커맨드 + skill | `reflect` 또는 `$reflect` |
 
----
+## 저장소 구조
 
-## 설치 방법
+```text
+.claude/
+  commands/
+  skills/
 
-### 방법 1 — 프로젝트 전용 (이 레포를 클론해서 사용)
-
-이 레포를 클론하면 `.claude/skills/`와 `.claude/commands/`가 이미 있습니다.
-해당 디렉토리에서 Claude Code를 실행하면 스킬과 커맨드가 자동으로 인식됩니다.
-
-```bash
-git clone <repo-url>
-cd "Jangpm Agent Workflow"
-claude
+.codex/
+  skills/
+    blueprint/
+    deep-dive/
+    reflect/
 ```
 
-### 방법 2 — 전역 설치 (모든 프로젝트에서 사용)
+## Codex 설치
 
-skills와 commands 폴더를 각각 `~/.claude/`로 복사합니다.
+Codex 사용자는 세 스킬 폴더를 `~/.codex/skills/`로 복사하면 됩니다.
 
-**macOS / Linux:**
-```bash
-cp -r .claude/skills/blueprint  ~/.claude/skills/
-cp -r .claude/skills/deep-dive  ~/.claude/skills/
-cp -r .claude/skills/reflect    ~/.claude/skills/
+### Windows PowerShell
 
-cp .claude/commands/blueprint.md  ~/.claude/commands/
-cp .claude/commands/deep-dive.md  ~/.claude/commands/
-cp .claude/commands/reflect.md    ~/.claude/commands/
+```powershell
+Copy-Item -Recurse .\.codex\skills\blueprint  "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\.codex\skills\deep-dive  "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\.codex\skills\reflect    "$env:USERPROFILE\.codex\skills\"
 ```
 
-**Windows (PowerShell):**
+### macOS / Linux
+
+```bash
+cp -r ./.codex/skills/blueprint ~/.codex/skills/
+cp -r ./.codex/skills/deep-dive ~/.codex/skills/
+cp -r ./.codex/skills/reflect   ~/.codex/skills/
+```
+
+## Claude Code 설치
+
+기존 Claude Code 배포 방식도 그대로 유지합니다.
+
+### Windows PowerShell
+
 ```powershell
 Copy-Item -Recurse .\.claude\skills\blueprint  "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse .\.claude\skills\deep-dive  "$env:USERPROFILE\.claude\skills\"
@@ -51,43 +63,24 @@ Copy-Item .\.claude\commands\deep-dive.md  "$env:USERPROFILE\.claude\commands\"
 Copy-Item .\.claude\commands\reflect.md    "$env:USERPROFILE\.claude\commands\"
 ```
 
----
+### macOS / Linux
 
-## 사용 방법
+```bash
+cp -r ./.claude/skills/blueprint ~/.claude/skills/
+cp -r ./.claude/skills/deep-dive ~/.claude/skills/
+cp -r ./.claude/skills/reflect   ~/.claude/skills/
 
-Claude Code 세션에서 슬래시 커맨드로 호출합니다.
-
-```
-/blueprint           # 에이전트 시스템 설계서 생성
-/deep-dive           # 주제 심층 인터뷰 + 스펙 문서 작성
-/reflect             # 세션 마무리 정리
-```
-
-인수를 넘길 수도 있습니다:
-
-```
-/deep-dive 사용자 알림 시스템
-/blueprint 고객 리뷰 자동 분류 에이전트
+cp ./.claude/commands/blueprint.md ~/.claude/commands/
+cp ./.claude/commands/deep-dive.md ~/.claude/commands/
+cp ./.claude/commands/reflect.md   ~/.claude/commands/
 ```
 
----
+## Codex 배포본에서 바뀐 점
 
-## 스킬 구조
-
-```
-.claude/skills/
-├── blueprint/
-│   ├── SKILL.md                        # 워크플로우 지침
-│   └── references/
-│       ├── design-principles.md        # 에이전틱 시스템 설계 원칙
-│       └── document-template.md        # 설계서 출력 템플릿
-├── deep-dive/
-│   └── SKILL.md
-└── reflect/
-    └── SKILL.md
-```
-
----
+- Claude 전용 `/commands` 래퍼를 제거하고 `SKILL.md` 중심 구조로 정리했습니다.
+- `.claude/...` 경로, `Task` 기반 서브에이전트, `AskUserQuestion` 전제를 Codex 흐름에 맞게 바꿨습니다.
+- `blueprint`에는 Codex 기준 문서 템플릿, 설계 원칙, 구조 검증 스크립트를 포함했습니다.
+- 세 스킬 모두 `agents/openai.yaml`을 추가해 Codex UI 메타데이터를 함께 배포합니다.
 
 ## 라이선스
 

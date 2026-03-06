@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reflect"
+  short_description: "Session wrap-up with docs, learnings, and next steps"
+  default_prompt: "Use $reflect to summarize this Codex session and tell me the next actions."
