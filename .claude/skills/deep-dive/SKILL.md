@@ -5,14 +5,17 @@ description: Interview user in-depth to create a detailed spec. Use when the use
 
 # deep-dive
 
-An in-depth interview skill that asks non-obvious, probing questions across all dimensions — technical implementation, UI/UX, tradeoffs, concerns, and edge cases — then either writes a new spec file or updates an existing document.
+An in-depth interview skill that asks non-obvious, probing questions across all dimensions — technical implementation, UI/UX, tradeoffs, concerns, and edge cases — then saves results to a spec document.
+
+**CRITICAL DEFAULT BEHAVIOR**: When an existing spec or planning document is found, you MUST update that document unless the user explicitly requests a new file. Creating a new file when a relevant document already exists is INCORRECT behavior — unless the user overrides this in Step 1. New file creation is the default ONLY when no related document exists at all.
 
 ## Execution Flow
 
 1. Read the user's instructions (topic/goal) from `$ARGUMENTS`
-2. Scan the current working directory for an existing spec/planning document
-3. Conduct a multi-round interview using `AskUserQuestion`
-4. If an existing document was found → update it; otherwise → create a new spec file
+2. Scan the current working directory for existing spec/planning documents
+3. **If documents found → present them to the user and confirm which to update**
+4. Conduct a multi-round interview using `AskUserQuestion`
+5. Save results: update the chosen document (default) or create new only if user requested a new file in step 3
 
 ---
 
@@ -23,7 +26,16 @@ An in-depth interview skill that asks non-obvious, probing questions across all 
    - `spec-*.md`, `*-spec.md`
    - `*기획*.md`, `*설계*.md`, `*planning*.md`, `*PRD*.md`, `*requirements*.md`
    - Any `.md` file that looks like a design/planning document based on its name
-3. If a matching file is found, read it with `Read` to understand its current content and structure. Keep this in context for Step 4.
+3. If a matching file is found, read it with `Read` to understand its current content and structure.
+4. **If no documents found** → skip to Step 2 (interview). The decision is implicitly **create new** — Step 4b will apply after the interview.
+5. **User confirmation (REQUIRED when documents are found)**:
+   - Present the candidate document(s) to the user via `AskUserQuestion`
+   - If **one document** found: "I found an existing document: `[filename]`. I'll update this with the interview results. OK? (Type 'new' if you want a separate file instead.)"
+   - If **multiple documents** found: "I found these existing documents: [list]. Which one should I update? Or type 'new' to create a fresh spec file."
+   - If the user picks a document (or confirms the single one) → that is the **update target** (proceed to interview, then Step 4a)
+   - If the user indicates they want a new/separate file (e.g., "new", "따로 만들어줘", "separate file", "새로 만들어") → mark as **create new** (proceed to interview, then Step 4b)
+   - If the user does not request a new file → **default is update**
+   - ⚠️ This decision is **FINAL** — do not re-evaluate or change it in later steps.
 
 ---
 
@@ -49,29 +61,44 @@ Use `AskUserQuestion` to interview the user continuously. Follow these rules:
 
 ---
 
-## Step 3: Save Results — Auto-detect Mode
+## Step 3: Save Results — Follow Step 1 Decision
 
-Do **not** ask the user. Decide automatically based on Step 1's scan result:
+DO NOT re-evaluate. Follow the decision made in Step 1:
 
-- **Existing document found** → go to Step 4a (Update)
-- **No document found** → go to Step 4b (Create)
+- **Update target was chosen in Step 1** → go to Step 4a (Update)
+- **No document was found, or user requested a new file** → go to Step 4b (Create)
+
+⚠️ **HARD RULE**: If an existing document was found AND the user did NOT request a new file, you MUST go to Step 4a. Do not create a new file.
 
 ---
 
 ## Step 4a: Update Existing Document
 
-1. The file was already read in Step 1 — use that content
-2. Analyze its structure: identify existing sections and their scope
-3. Merge the interview findings intelligently:
-   - **Existing sections**: revise or append only the relevant parts; do not touch unrelated content
-   - **New sections**: add at the bottom if the document doesn't already cover them
-   - **Conflicts**: if the interview contradicts existing content, mark the change with a `> ⚠️ Updated:` callout rather than silently overwriting
-4. Use `Edit` tool for targeted updates (prefer `Edit` over `Write` to preserve existing content)
-5. Tell the user the filename and summarize exactly what was changed
+1. The file was already read in Step 1 — use that content.
+
+2. **Pre-merge analysis (REQUIRED):**
+   - List every section heading in the existing document
+   - Map each interview finding to an existing section
+   - Classify each item as one of:
+     - **APPEND** — new content that belongs in an existing section
+     - **REVISE** — content that updates/corrects something already written
+     - **NEW_SECTION** — content with no matching section
+
+3. **Merge rules:**
+   - **APPEND**: Add at the end of the matching section
+   - **REVISE**: Keep existing content, add changes with `> ⚠️ Updated:` marker to show what changed and why
+   - **NEW_SECTION**: Insert before the last section (typically "Open Questions") — do not scatter new sections randomly
+   - **Untouched content**: Any existing content NOT covered by the interview must remain exactly as-is — do not reformat, rephrase, or reorganize it
+   - Use `Edit` tool for section-by-section targeted updates. **Do NOT use `Write` to overwrite the entire file.**
+
+4. Tell the user the filename and summarize exactly what was changed.
 
 ---
 
 ## Step 4b: Create New Spec File
+
+> ⚠️ Only reach this step if: (a) no existing document was found in Step 1, OR (b) user explicitly requested a new file in Step 1.
+> If neither condition is true, STOP and go back to Step 4a.
 
 - Filename: `spec-[topic-slug].md` in the current working directory
 - Format:
