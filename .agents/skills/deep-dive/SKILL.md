@@ -1,134 +1,218 @@
 ---
 name: deep-dive
-description: A Codex skill for in-depth requirements interviews and spec document writing. Conducts multi-round questioning to clarify core behavior, technical constraints, UX, tradeoffs, and failure modes, then writes a new spec or updates an existing document. Use when the user asks for "$deep-dive", "deep dive", "interview me", "create a spec", "요구사항 정리", "기획서 만들어", or "스펙 작성", or when they have a rough idea and need a structured requirements deep dive in Codex.
+description: A Codex skill for Socratic interviews that deepen a spec or refine an existing agent blueprint. Conducts forcing-question interviews, challenges premises, generates alternatives, and validates the final document with a document-grounded reviewer pass. Use when the user asks for "$deep-dive", "deep dive", "interview me", "create a spec", "요구사항 정리", "기획서 만들어", "스펙 작성", "blueprint 심화", or "설계 보강", or when they have a rough idea or an existing blueprint that needs structured stress-testing in Codex.
 metadata:
-  short-description: Run a deep requirements interview and spec write-up
+  short-description: Socratic deep-dive interview with forcing questions and reviewer loop
 ---
 
 # Deep Dive
 
 ## Overview
 
-Clarify ambiguous work through a focused, multi-round interview, then update an existing spec when possible or create a new one when needed.
+Clarify ambiguous work or stress-test an existing design through a **forcing-question** interview, surface hidden premises, generate alternatives, and validate the final spec with a document-grounded reviewer pass.
 
-- Default output file: `spec-<topic-slug>.md`
+Primary use case: **blueprint 심화** — deepen an agent blueprint produced by `/blueprint` by attacking gaps, implicit assumptions, and weak justifications. Fallback use case: scratch-build a spec when no blueprint exists.
+
+- Default output file: `spec-<topic-slug>.md` (scratch mode) or the existing blueprint/spec file (deepening mode)
 - **CRITICAL**: If a related document already exists, update that document unless the user explicitly asks for `new`
-- Ask fewer questions, go deeper, and build cumulatively on prior answers
+- Interview uses **one question per `request_user_input`** — never batch
+- No round cap: push until answers are specific and evidence-based; back off if the user refuses the same axis twice (escape hatch)
 - Prefer targeted edits with `apply_patch`; do not overwrite unrelated content
 
-## Workflow
+## References (로드 규칙)
 
-### 1. Read the Invocation Context
+아래 4개 파일을 **해당 Phase 진입 시에만** 읽는다. 처음부터 전부 읽지 말 것 (컨텍스트 낭비).
 
-Treat the user text that accompanies the skill invocation as the initial topic/context. Example: `/deep-dive payment system` suggests the topic `payment system`.
+- `references/question-library.md` — 일반 스펙용 forcing 질문 라이브러리 (Phase 3 진입 시)
+- `references/agent-design-questions.md` — 에이전트 blueprint 심화 전용 질문 축 (Phase 3 진입 시, 심화 모드일 때만)
+- `references/anti-patterns.md` — 어조 가이드 & 피할 표현 (Phase 3 진입 시 1회)
+- `references/reviewer-checklist.md` — Spec Reviewer Loop 5차원 기준 (Phase 7 진입 시)
 
-- If no argument is given, ask the topic as the first question
-- Extract the likely topic, intent, and expected deliverable
-- Do not decide update-vs-new yet; scan the workspace first
+## Execution Flow (7 Phases)
 
-### 2. Scan the Workspace First
+1. **Phase 1** — Context & Doc Scan
+2. **Phase 2** — Topic Framing + Blueprint 로딩 (심화 모드 / 스크래치 모드 분기)
+3. **Phase 3** — Forcing Interview (한 질문씩 밀어붙이기)
+4. **Phase 4** — Premise Naming (전제 명시 & 확인)
+5. **Phase 5** — Alternative Framings (MANDATORY)
+6. **Phase 6** — Write / Update Spec
+7. **Phase 7** — Spec Review Loop (document-grounded reviewer pass, 최대 3회)
 
-Search the current working directory for existing spec or planning documents before interviewing.
+---
 
-- Prefer `rg --files`
-- Check candidate patterns:
-  - `spec-*.md`
-  - `*-spec.md`
-  - `blueprint-*.md`
-  - `*blueprint*.md`
-  - `*planning*.md`
-  - `*requirements*.md`
-  - `*PRD*.md`
-  - `*기획*.md`
-  - `*설계*.md`
-  - `architecture.md`, `roadmap.md`, `overview.md`, `notes.md`
-- Always inspect `README.md` and `AGENTS.md` if present
-- If a related document is found, read it and summarize:
-  - its purpose
-  - current section structure
-  - how directly it matches the requested topic
+## Phase 1: Context & Doc Scan
 
-### 3. Confirm Update vs New Before Interview
+1. 사용자 invocation 텍스트를 읽어 주제를 파악한다. 비어 있으면 Phase 2에서 첫 질문으로 묻는다.
+2. `rg --files`로 현재 작업 디렉토리에서 기존 설계 문서를 스캔한다:
+   - **Blueprint 우선 패턴**: `blueprint-*.md`, `*-blueprint.md`, `agent-design*.md`, `design-*.md`
+   - **Spec 패턴**: `spec-*.md`, `*-spec.md`
+   - **한국어 패턴**: `*기획*.md`, `*설계*.md`, `*planning*.md`
+   - **기타**: `*PRD*.md`, `*requirements*.md`, `architecture.md`, `roadmap.md`, `overview.md`, `notes.md`
+   - **항상 확인**: `README.md`, `AGENTS.md` (이름과 무관하게 스펙 내용을 담을 수 있음)
+   - ⚠️ **AGENTS.md는 context-only**: 읽어서 프로젝트 규칙·제약은 이해하되, **업데이트 후보로 제시하지 말 것** — 에이전트 지시 파일이지 스펙 문서가 아니다. (Claude 환경의 CLAUDE.md도 동일 취급)
+3. 감지된 파일을 읽어 내용을 파악한다. blueprint 패턴이 매칭된 파일은 **전체**를 읽는다 — Phase 3에서 이미 답한 내용을 다시 묻지 않기 위함.
+4. **User confirmation (문서가 발견되었을 때)**:
+   - AGENTS.md / CLAUDE.md는 후보 리스트에서 제외.
+   - 1개 발견: "기존 문서 `[filename]`을 업데이트하겠습니다. 괜찮으면 계속, 새 파일로 만들 거면 'new'라고 답해주세요." — 명확한 선택이 필요하면 `request_user_input` 사용.
+   - 여러 개 발견: `request_user_input`으로 어느 것을 업데이트할지 또는 'new'를 선택하게 한다. **옵션은 최대 3개까지만** 제시하고, 나머지는 assistant 메시지에 요약한 뒤 free-text 입력으로 받는다.
+   - **사용자가 'new'를 명시하지 않으면 기본값은 업데이트**.
+5. **아무 문서도 없으면** Phase 2로. 이 경우 최종 단계는 암묵적으로 "create new".
 
-If any related document exists, confirm the target before starting the long interview.
+⚠️ Phase 1에서 내린 "업데이트 대상" 결정은 **FINAL**. Phase 6에서 재평가하지 않는다.
 
-- Use `request_user_input` when it meaningfully reduces ambiguity
-- Default recommendation is always to update the most relevant existing document
-- If exactly 1 strong candidate exists: ask `Update existing (Recommended)` vs `Create new`
-- If multiple candidates exist: recommend the best match, expose the next best option, and allow free-text if needed
-- If the user does not explicitly say `new`, default to updating the existing document
-- This decision is final for the rest of the run
+---
 
-### 4. Interview in Rounds
+## Phase 2: Topic Framing + Blueprint 로딩
 
-Interview rules:
+이 Phase의 목적: Forcing Interview에서 어떤 질문 세트·어떤 톤으로 갈지 결정한다.
 
-- Ask only 1-2 questions per round
-- Build deeper on the previous answer before broadening
-- Avoid generic prompts like "what is the goal?" when you can ask a sharper operational question
-- Usually finish within 3-5 rounds
-- If the user says "모르겠다" or "알아서", choose a reasonable default, state it clearly, and keep going
+### 심화 모드 (Blueprint Deepening)
+**진입 조건**: Phase 1에서 blueprint 패턴 매칭 문서 1개 이상 + 사용자가 업데이트 확정.
 
-Category coverage:
+**행동**:
+1. blueprint 내용을 3–5줄로 요약해 사용자에게 되돌려 읽어준다: "현재 이 blueprint가 이렇게 설계돼 있네요: ... 오늘은 이 설계의 어느 부분을 제일 깊이 파고들고 싶으세요? (전체를 훑는 것도 가능)"
+2. 사용자 답을 기준으로 **심화 초점**을 정한다. 좁으면 그 축으로만, 넓으면 `agent-design-questions.md`의 A–G 축을 순회.
+3. Phase 3에서 `agent-design-questions.md`와 `question-library.md`를 **둘 다** 로드한다.
 
-1. Core behavior *(always)* — happy path, edge cases, completion condition
-2. Inputs and outputs — format, source, destination, validation
-3. Technical constraints — stack, APIs, permissions, performance limits
-4. UX or operator flow *(skip if not applicable)* — who uses it, when, how
-5. Tradeoffs *(always)* — speed vs accuracy, simplicity vs flexibility
-6. Failure modes *(always)* — retries, escalation, abort conditions
-7. Future change — likely extensions or scale changes
-8. Concerns — what would make the user reject the result
+### 스크래치 모드 (From Scratch)
+**진입 조건**: Phase 1에서 관련 문서 없음 또는 사용자가 'new' 선택.
 
-Default mode guidance:
+**행동**:
+1. 사용자에게 짧게 묻는다: "기존 blueprint 없이 새로 스펙을 짜는 거네요. 이 주제를 한 문장으로 정의해주세요: `[이것]이 [누구]를 위해 [무엇]을 한다`."
+2. 답을 받아 주제 문장을 잠정 고정. 인터뷰에서 흔들리면 돌아와 수정.
+3. Phase 3에서 `question-library.md`만 로드 (`agent-design-questions.md`는 필요 시 보조).
 
-- Ask directly in assistant messages unless structured option selection is needed
-- Prefer `request_user_input` for explicit branching choices such as document selection
-- Even if an answer is incomplete, continue and mark assumptions clearly
+---
 
-### 5. Follow the Decision Exactly
+## Phase 3: Forcing Interview
 
-Do not re-evaluate update-vs-new later.
+Phase 2에서 결정한 모드대로 references를 읽고, 다음 규칙으로 인터뷰한다.
 
-- If an existing document was found and the user did not explicitly request `new`, you MUST update it
-- New file creation is allowed only when:
-  - no related document was found at all, or
-  - the user explicitly requested `new`
+### 대화 규칙
 
-### 5a. Update Existing Document Carefully
+- **한 번의 `request_user_input` = 질문 한 개**. 여러 질문 묶지 말 것.
+- 구조적 선택지가 필요한 경우(선택지 A/B/C)엔 `request_user_input`, 자유 응답이 필요한 경우엔 assistant 메시지로 직접 묻기.
+- **references의 질문을 그대로 복붙하지 말고** 현재 주제의 용어로 바꿔 쓸 것.
+- **사용자 답이 Red flag(참고: references)면 같은 축으로 한 번 더 찌른다 (Follow-up).** 구체적·증거 기반 답이 나올 때까지.
+- **Escape hatch**: 같은 축에서 사용자가 **2회 연속** Follow-up을 거부·회피하면 → 그 축을 접고 "Open Questions"로 메모한 뒤 다음 축으로. 강요하지 말 것.
+- **어조**: `references/anti-patterns.md`의 중간 밸런스. 칭찬·회피·일반론 금지. 사용자 답을 그대로 인용해 모순·모호함을 짚기.
+- **이미 답된 질문 스킵**: 심화 모드라면 blueprint에 명시된 내용은 다시 묻지 말 것. blueprint의 **빈틈·암묵 전제·근거 미명시**만 파고든다.
+- **라운드 상한 없음**. 평균 6–12개 질문, 경우에 따라 그 이상.
 
-Before editing, perform this merge analysis:
+### 카테고리 커버리지
 
-1. List every section heading in the existing document
-2. Map each interview finding to the section it belongs in
-3. Classify each mapped item as `APPEND`, `REVISE`, or `NEW_SECTION`
+- **항상 다뤄야 할 축** (`question-library.md` 기준): Core Behavior (1), Tradeoffs (4), Failure Modes (5).
+- **주제에 맞으면 다뤄야 할 축**: Technical Implementation (2), UI/UX (3 — 비대화형 도구는 스킵), Scale & Future (6), Concerns (7).
+- **심화 모드**: `agent-design-questions.md`의 축 A–G를 기준으로 blueprint 내용과 대조. 이미 충분히 결정된 축은 건너뛴다.
 
-Merge rules:
+각 질문 후 사용자 답을 내부 메모에 정리 (Phase 6에서 스펙 쓸 때 사용).
 
-- `APPEND`: add at the end of the matching section
-- `REVISE`: replace outdated content directly; do not leave change markers
-- `NEW_SECTION`: append at the end, or place before `Open Questions` if that section exists
-- Leave unrelated content exactly as-is
-- Do not reformat untouched sections
-- Use section-level `apply_patch`; do not replace the whole file unless the file is clearly a throwaway draft
+### Phase 3 종료 조건
 
-If interview findings contradict old content, the spec should reflect the current truth. Git history captures the change history; the doc should not.
+다음 중 하나:
+- 필수 축(Core/Tradeoffs/Failure) 전부에서 구체적 답을 받음 + 주제에 해당하는 선택 축도 다룸.
+- 사용자가 "이 정도면 됐다" / "충분해요" / "다음으로 넘어가자"라고 명시.
 
-### 5b. Create a New Spec Only When Allowed
+---
 
-Only create a new file when step 5 allows it.
+## Phase 4: Premise Naming
 
-Filename:
+Phase 3이 어느 정도 진행된 뒤(일반적으로 4–6개 질문 이후), 인터뷰를 **잠깐 멈추고** 다음을 수행한다.
 
-- `spec-<topic-slug>.md` in the current working directory
+1. 지금까지의 답변 + (심화 모드면) blueprint 내용에서 **암묵적으로 깔려 있는 전제 3–5개**를 추출한다. 예:
+   - "사용자가 한국어로만 입력한다"
+   - "이 에이전트는 한 번에 한 사용자만 쓴다"
+   - "외부 API가 항상 응답한다"
+   - "blueprint가 LLM 호출로 잡은 X 단계는 코드로는 불가능하다"
+2. 전제 3–5개를 먼저 assistant 메시지로 나열해 보여준다.
+3. 이어서 `request_user_input`으로 **하나의 확인 질문만** 한다. 옵션은 최대 3개:
+   - `모두 맞다`
+   - `수정 필요`
+   - `잘 모르겠다`
+   사용자가 자유 수정이 필요하면 free-text로 어느 전제가 틀렸는지 적게 한다.
+4. 사용자가 특정 전제를 부인·흔들거나 `수정 필요`/free-text 수정을 주면 → **Phase 3로 되돌아가** 해당 축으로 질문 추가. 전제가 모두 확인되면 Phase 5로.
 
-Default structure:
+이 Phase는 **반드시 한 번** 수행한다. 스펙 품질의 절반은 전제를 명시적으로 꺼냈느냐에 달려 있다.
+
+---
+
+## Phase 5: Alternative Framings (MANDATORY)
+
+**스펙을 쓰기 전에 반드시 이 Phase를 거친다.** 여기서 `request_user_input`으로 사용자 승인을 받지 못하면 Phase 6 진행 금지.
+
+### 심화 모드
+
+1. blueprint의 **핵심 설계 결정 1–2개**를 고른다 (예: "병렬 서브에이전트 구조", "단계 X를 LLM으로 처리", "체크포인트를 3군데 둠").
+2. 각각에 대해 "반대로 했다면?" 대안을 1–2개 제시한다. 포맷:
+   ```
+   현재 결정: [blueprint의 결정을 한 줄 인용]
+   대안 A:   [반대/다른 방식] — 효과: [Pros 1–2개] / 비용: [Cons 1–2개]
+   대안 B:   [또 다른 각도] — 효과: ... / 비용: ...
+   권장:     [A / B / 현재 유지] — 근거: [Phase 3·4에서 들은 사용자 답을 인용]
+   ```
+3. `request_user_input`으로 선택받을 때는 **최대 3개 옵션만** 준다:
+   - `현재 유지`
+   - `대안 A`
+   - `대안 B`
+   추가 논의가 필요하면 사용자가 free-text(자동 `Other`)로 적게 하고, 그 경우 Phase 5에 머물며 더 논의한다.
+
+### 스크래치 모드
+
+1. 주제에 대해 **2–3개 접근안** 제시. 각각:
+   - 이름
+   - 한 줄 요약
+   - Effort: S/M/L
+   - Risk: Low/Med/High
+   - Pros: 2–3개
+   - Cons: 2–3개
+   - Reuses: 재사용 가능한 기존 자산
+2. 최소 2개, 가능하면 3개. 하나는 **최소 실행 가능안**, 하나는 **이상적 아키텍처**, 하나는 **색다른 각도**.
+3. `request_user_input`으로 접근안 2–3개 중 하나를 승인받아야 Phase 6으로 간다. 추가 논의가 필요하면 사용자가 free-text(자동 `Other`)로 적게 하고, 그 경우 Phase 5에 머문다.
+
+### Phase 5를 건너뛸 수 없는 이유
+
+대안을 생성해 보지 않은 설계는 "처음 떠오른 생각"에 고착된다. 이 Phase가 forcing function. 사용자가 "대안 필요 없어요"라고 해도 한 번은 제시하고 "현재 유지" 선택지를 주는 것으로 형식은 지킨다.
+
+---
+
+## Phase 6: Write / Update Spec
+
+Phase 1에서 내린 결정에 따라:
+
+- **업데이트 대상이 정해진 경우** → Phase 6a (Update)
+- **새 파일을 만드는 경우** → Phase 6b (Create)
+
+⚠️ **HARD RULE**: Phase 1에서 기존 문서를 업데이트하기로 했고 사용자가 중간에 'new'를 요청하지 않았다면, 반드시 6a로.
+
+### Phase 6a: 기존 문서 업데이트
+
+1. Phase 1에서 이미 읽은 파일 내용을 기준으로.
+2. **Pre-merge 분석 (필수)**:
+   - 기존 문서의 모든 섹션 heading 나열
+   - Phase 3–5에서 얻은 각 결정을 기존 섹션에 매핑
+   - 각 항목을 분류: **APPEND** / **REVISE** / **NEW_SECTION**
+3. **Merge 규칙**:
+   - **APPEND**: 해당 섹션 끝에 추가
+   - **REVISE**: 낡은 내용을 **직접 교체**. 과거 내용을 병기하지 말 것 (`<!-- 이전 -->` 같은 마커 금지). Git blame이 히스토리 역할.
+   - **NEW_SECTION**: 문서의 마지막 섹션 직전에 삽입. "Open Questions"가 있으면 그 앞에, 없으면 맨 끝에 추가.
+   - **손대지 않을 내용**: 인터뷰에서 다루지 않은 기존 내용은 그대로 유지. 리포맷·재정리 금지.
+   - **도구**: 섹션 단위 `apply_patch` 사용. 명백한 throwaway 초안이 아니면 전체 덮어쓰지 말 것.
+4. 파일 말미에 **"What I noticed"** 섹션 추가/갱신: 이 세션에서 관찰한 사용자의 사고 패턴 2–3줄 (예: "트레이드오프에서 속도보다 정확도를 일관되게 우선시함"). 다음 세션 참고용.
+5. 사용자에게 파일 경로와 변경 요약 보고.
+
+### Phase 6b: 새 파일 생성
+
+> ⚠️ 이 단계 진입 조건: (a) Phase 1에서 기존 문서 없음, 또는 (b) 사용자가 'new' 요청.
+> 두 조건 모두 아니면 Phase 6a로.
+
+- 파일명: `spec-<topic-slug>.md` (현재 작업 디렉토리)
+- 포맷:
 
 ```markdown
 # Spec: [Topic]
 
 ## Overview
-[1-2 sentence summary]
+[1–2문장 요약]
 
 ## Goals
 - ...
@@ -141,34 +225,103 @@ Default structure:
 - ...
 
 ## Requirements
+### Functional
+- ...
+### Non-functional
 - ...
 
 ## Technical Notes
 - ...
 
 ## UX / Operator Flow
-- ...
+(비해당 시 생략)
 
-## Tradeoffs and Decisions
+## Tradeoffs & Decisions
 - ...
 
 ## Failure Modes
 - ...
 
+## Premises (Phase 4에서 확인된 전제)
+- ...
+
+## Alternatives Considered (Phase 5 결과)
+- 채택: ...
+- 거부된 대안: ... (거부 이유)
+
 ## Open Questions
+- ...
+
+## What I noticed
+[사용자 사고 패턴 2–3줄]
+```
+
+`apply_patch`로 저장 후 파일 경로 보고.
+
+---
+
+## Phase 7: Spec Review Loop
+
+스펙이 저장된 후, `references/reviewer-checklist.md`의 5차원에 따라 **document-grounded reviewer pass**를 수행한다. 최대 3회.
+
+기본값은 **같은 Codex 세션 안에서 하되, 판단 근거를 문서 내용으로만 제한하는 blind review discipline**이다. 별도 Codex 세션/프로세스를 안전하게 시작할 수 있는 환경이면 그것을 우선하지만, **그 가능성을 전제로 스킬을 멈추지 말 것**.
+
+### Round 1
+
+1. `references/reviewer-checklist.md`를 읽는다.
+2. Reviewer pass 시작. 이 Round에서는 **스펙 파일과 원본 blueprint만** 근거로 삼는다. 입력으로 제공:
+   - 스펙 파일 절대경로
+   - (심화 모드) 원본 blueprint 파일 절대경로
+   - 체크리스트 5차원 요약 (Completeness / Consistency / Clarity / Scope / Feasibility)
+   - 요구 출력 포맷
+   - "이 Round에서는 인터뷰 기억이나 이전 판단을 근거로 쓰지 말고, 문서에 적힌 내용만으로 판정하라"는 명시적 지시
+3. 리뷰 결과 수신.
+
+### Round 1 결과 처리
+
+- Overall이 `Converged` → Phase 7 종료, 최종 보고.
+- `Needs revision` → Priority fixes를 `apply_patch`로 스펙에 반영. Round 2로.
+
+### Round 2
+
+Round 1과 동일하지만, 먼저 수정된 스펙 파일을 다시 읽고 같은 규칙으로 재판정한다. 가능하면 별도 세션/프로세스를 쓰고, 아니면 같은 세션 내에서 **이전 리뷰 메모를 근거로 삼지 않는 blind pass**로 수행한다.
+
+### Round 3
+
+마지막 반복. Round 2와 동일 방식.
+
+### 종료 시 남은 이슈 처리
+
+Round 3 후에도 Converged가 아니면, 남은 Fail/Partial 항목을 스펙 말미에 추가:
+
+```markdown
+## Reviewer Concerns
+
+Round 3까지 수렴하지 않은 항목:
+
+- [Completeness] [항목]
+- [Clarity] [항목]
 - ...
 ```
 
-### 6. Hand-off
+이 섹션은 다음 세션 참고용으로 보존. 삭제 금지.
 
-At the end, report only:
+### Phase 7 중단 조건
 
-- the file path created or updated
-- the key decisions clarified through the interview
-- any remaining uncertainties or assumptions
+- 사용자가 "그만 하자" / "이 정도면 됐다" → 현재 Round에서 중단, 남은 이슈를 Reviewer Concerns로.
+- Converged 결과가 나오면 Round 수와 무관하게 종료.
+
+### 최종 보고
+
+Phase 7 종료 후 사용자에게:
+- 스펙 파일 경로
+- 최종 수렴 상태 (Converged / Reviewer Concerns 존재)
+- 주요 변경점 3–5줄 요약
+
+---
 
 ## Notes
 
-- Update existing documents by default; creating a separate file when a good target already exists is incorrect behavior
-- Depth matters more than exhausting every category mechanically
-- The finished document should describe the current intended behavior cleanly, not narrate what changed
+- 기존 문서 업데이트가 기본값 — 적합한 대상이 있는데 새 파일을 만드는 것은 잘못된 행동.
+- 깊이가 카테고리를 기계적으로 훑는 것보다 중요.
+- 완성된 문서는 "현재 의도된 동작"을 깔끔히 서술해야 한다. 변화 내역을 문서가 아닌 git history에서 확인되도록.

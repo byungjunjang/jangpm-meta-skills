@@ -62,6 +62,11 @@ blueprint → deep-dive → [구현] → autoresearch → reflect
         validate_blueprint_doc.py  # 블루프린트 문서 구조 검증 스크립트
     deep-dive/
       SKILL.md
+      references/
+        question-library.md
+        agent-design-questions.md
+        anti-patterns.md
+        reviewer-checklist.md
     reflect/
       SKILL.md
 
@@ -79,6 +84,7 @@ blueprint → deep-dive → [구현] → autoresearch → reflect
     deep-dive/
       SKILL.md
       agents/openai.yaml
+      references/
     reflect/
       SKILL.md
       agents/openai.yaml
