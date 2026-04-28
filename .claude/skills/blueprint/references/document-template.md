@@ -47,15 +47,17 @@ Output file name: `blueprint-<task-name>.md`
 
 분기가 2개 이상이면 Mermaid를 사용한다. 단순 선형 흐름은 ASCII도 가능.
 
+렌더러 호환성을 위해 **모든 라벨은 큰따옴표로 감쌀 것**. 한글·공백·`:` `?` `(` `)` `,` 같은 문자가 라벨에 들어가면 따옴표 없이는 파서가 깨진다. 노드 ID는 ASCII로 유지하고, `end` `class` `default` `subgraph` 같은 예약어는 ID로 쓰지 않는다.
+
 ```mermaid
 flowchart TD
-    A[입력] --> B[Step 1: 이름]
-    B --> C{분기조건}
-    C -->|경로 A| D[Step 2A: 이름]
-    C -->|경로 B| E[Step 2B: 이름]
-    D --> F[Step 3: 이름]
+    A["입력"] --> B["Step 1: 이름"]
+    B --> C{"분기조건?"}
+    C -->|"경로 A"| D["Step 2A: 이름"]
+    C -->|"경로 B"| E["Step 2B: 이름"]
+    D --> F["Step 3: 이름"]
     E --> F
-    F --> G[출력]
+    F --> G["출력"]
 ```
 
 ### LLM 판단 vs 코드 처리 구분

@@ -59,15 +59,17 @@ Use the exact section headers below so `scripts/validate_blueprint_doc.py` can v
 
 분기가 2개 이상이면 Mermaid를 사용한다. 단순 선형 흐름은 텍스트도 가능.
 
+렌더러 호환성을 위해 **모든 라벨은 큰따옴표로 감쌀 것**. 한글·공백·`:` `?` `(` `)` `,` 같은 문자가 라벨에 들어가면 따옴표 없이는 파서가 깨진다. 노드 ID는 ASCII로 유지하고, `end` `class` `default` `subgraph` 같은 예약어는 ID로 쓰지 않는다.
+
 ```mermaid
 flowchart TD
-    A[Input] --> B[Step 01: Name]
-    B --> C{Branch condition}
-    C -->|Path A| D[Step 02A: Name]
-    C -->|Path B| E[Step 02B: Name]
-    D --> F[Step 03: Name]
+    A["Input"] --> B["Step 01: Name"]
+    B --> C{"Branch condition?"}
+    C -->|"Path A"| D["Step 02A: Name"]
+    C -->|"Path B"| E["Step 02B: Name"]
+    D --> F["Step 03: Name"]
     E --> F
-    F --> G[Final Output]
+    F --> G["Final Output"]
 ```
 
 ### LLM vs Code Boundary
