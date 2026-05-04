@@ -3,7 +3,7 @@
 Claude Code와 Codex에서 에이전트 시스템 설계, 요구사항 구체화, 세션 마무리, 스킬 자동 최적화를 위한 메타 스킬 모음.
 
 - Claude Code 배포: `.claude/`
-- Codex 배포: `.agents/skills/` 또는 사용자 전역 `~/.agents/skills/`
+- Codex 배포: `.codex/skills/` 또는 사용자 전역 `~/.codex/skills/`
 
 ## 스킬 목록
 
@@ -70,7 +70,7 @@ blueprint → deep-dive → [구현] → autoresearch → reflect
     reflect/
       SKILL.md
 
-.agents/
+.codex/
   skills/
     autoresearch/
       SKILL.md
@@ -89,7 +89,7 @@ blueprint → deep-dive → [구현] → autoresearch → reflect
       SKILL.md
       agents/openai.yaml
 
-.agents/
+.codex/
   agents/
     reviewer.toml             # optional: create only when you need a custom subagent
     explorer.toml             # optional: create only when you need a custom subagent
@@ -97,25 +97,25 @@ blueprint → deep-dive → [구현] → autoresearch → reflect
 
 ## 설치 (Codex)
 
-네 개의 스킬 폴더를 `~/.agents/skills/`에 복사합니다.
+네 개의 스킬 폴더를 `~/.codex/skills/`에 복사합니다.
 
 ### Windows PowerShell
 
 ```powershell
-Copy-Item -Recurse .\.agents\skills\autoresearch "$env:USERPROFILE\.agents\skills\"
-Copy-Item -Recurse .\.agents\skills\blueprint   "$env:USERPROFILE\.agents\skills\"
-Copy-Item -Recurse .\.agents\skills\deep-dive   "$env:USERPROFILE\.agents\skills\"
-Copy-Item -Recurse .\.agents\skills\reflect     "$env:USERPROFILE\.agents\skills\"
+Copy-Item -Recurse .\.codex\skills\autoresearch "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\.codex\skills\blueprint   "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\.codex\skills\deep-dive   "$env:USERPROFILE\.codex\skills\"
+Copy-Item -Recurse .\.codex\skills\reflect     "$env:USERPROFILE\.codex\skills\"
 ```
 
 ### macOS / Linux
 
 ```bash
-mkdir -p ~/.agents/skills
-cp -r ./.agents/skills/autoresearch ~/.agents/skills/
-cp -r ./.agents/skills/blueprint    ~/.agents/skills/
-cp -r ./.agents/skills/deep-dive    ~/.agents/skills/
-cp -r ./.agents/skills/reflect      ~/.agents/skills/
+mkdir -p ~/.codex/skills
+cp -r ./.codex/skills/autoresearch ~/.codex/skills/
+cp -r ./.codex/skills/blueprint    ~/.codex/skills/
+cp -r ./.codex/skills/deep-dive    ~/.codex/skills/
+cp -r ./.codex/skills/reflect      ~/.codex/skills/
 ```
 
 ## 설치 (Claude Code)
@@ -148,8 +148,8 @@ cp -r ./.claude/skills/reflect      ~/.claude/skills/
 - `autoresearch`는 Claude Code와 Codex 양쪽에서 동일한 기능을 제공합니다. Codex에서는 명시적 위임 승인이 있는 기본 순차 실행 모델을 따릅니다.
 - Codex 배포에는 각 스킬 폴더에 선택적 UI 메타데이터를 담은 `agents/openai.yaml` 파일이 포함됩니다.
 - 공개 배포용 기본 정책으로 `blueprint`, `deep-dive`는 암묵 호출을 허용하고, `reflect`는 명시 호출과 구체적 fix confirmation 문맥에서의 제한적 암묵 호출을 함께 허용합니다. `autoresearch`는 명시 호출(`$autoresearch`)만 허용합니다.
-- Codex의 커스텀 서브에이전트는 스킬 폴더가 아니라 `.agents/agents/*.toml`에 정의해야 합니다.
-- 이 저장소는 커스텀 서브에이전트를 아직 포함하지 않으므로 `.agents/agents/` 디렉터리는 기본적으로 체크인하지 않습니다. 필요할 때만 `.agents/agents/`를 추가하면 됩니다.
+- Codex의 커스텀 서브에이전트는 스킬 폴더가 아니라 `.codex/agents/*.toml`에 정의해야 합니다.
+- 이 저장소는 커스텀 서브에이전트를 아직 포함하지 않으므로 `.codex/agents/` 디렉터리는 기본적으로 체크인하지 않습니다. 필요할 때만 `.codex/agents/`를 추가하면 됩니다.
 
 ## 라이선스
 

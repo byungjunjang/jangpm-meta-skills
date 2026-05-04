@@ -154,7 +154,7 @@ flowchart TD
 ```text
 /project-root
   AGENTS.md
-  /.agents
+  /.codex
     /skills
       /<skill-name>
         SKILL.md
@@ -163,7 +163,6 @@ flowchart TD
         /scripts        # optional
         /references     # optional
         /assets         # optional
-  /.codex
     /agents
       /<agent-name>.toml    # optional custom subagent
   /output
@@ -214,7 +213,7 @@ flowchart TD
 skill-creator가 보장하는 규격:
 1. SKILL.md frontmatter (`name`, `description`) 필수 필드 준수
 2. `description`의 트리거 정확도 최적화 (eval 기반 optimization loop)
-3. 스킬 저장 위치 `.agents/skills/<skill-name>/` 규격 준수
+3. 스킬 저장 위치 `.codex/skills/<skill-name>/` 규격 준수
 4. 폴더 구조 (`SKILL.md` + `scripts/` + `references/`) 규격 준수
 5. Progressive disclosure: SKILL.md 본문 500줄 이내, 대용량 참조는 `references/`로 분리
 6. 테스트 프롬프트 실행 및 품질 검증 완료
@@ -230,7 +229,7 @@ skill-creator가 보장하는 규격:
 - [ ] Intermediate artifacts use the `output/stepNN_<name>.<ext>` rule
 - [ ] LLM vs code responsibilities are separated clearly
 - [ ] Human review points are explicit where needed
-- [ ] Codex skill paths use `.agents/skills/...`
+- [ ] Codex skill paths use `.codex/skills/...`
 - [ ] Codex custom subagents use `.codex/agents/*.toml`
 - [ ] `Custom Agent Definitions` section is present and uses `.codex/agents/*.toml` paths
 - [ ] `AGENTS.md 작성 원칙` section is present with 4 principles + self-verification tests + tradeoff + success metrics

@@ -207,7 +207,6 @@ Rules:
   - `SKILL.md`
   - `GEMINI.md`
   - anything under `.claude/`
-  - anything under `.agents/`
   - anything under `.codex/`
 
 **Automation ideas**

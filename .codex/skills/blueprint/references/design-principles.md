@@ -20,14 +20,13 @@
 ```text
 /project-root
   AGENTS.md
-  /.agents
+  /.codex
     /skills/<skill-name>/
       SKILL.md
       /agents/openai.yaml      # optional UI metadata
       /scripts/       # optional
       /references/    # optional
       /assets/        # optional
-  /.codex
     /agents/<agent-name>.toml   # optional custom subagent
   /output/
   /scripts/           # optional
@@ -39,7 +38,8 @@
 - 최종 문서는 프로젝트 루트의 `./blueprint-<task-name>.md`
 - 중간 산출물은 `output/` 아래에 저장
 - Claude 전용 경로인 `.claude/commands`, `.claude/agents`, `AGENT.md`는 Codex 설계에 넣지 않는다
-- Codex skill과 custom subagent를 혼동하지 않는다. 스킬은 `.agents/skills/`, 에이전트는 `.codex/agents/*.toml`이다.
+- Codex skill과 custom subagent를 혼동하지 않는다. 스킬은 `.codex/skills/`, 에이전트는 `.codex/agents/*.toml`이다.
+- 새 Codex 스킬은 repo 범위에서는 `.codex/skills/<skill-name>/`, 사용자 전역 범위에서는 `~/.codex/skills/<skill-name>/`에 저장한다.
 
 ## 3. LLM vs Deterministic Work
 
@@ -152,7 +152,7 @@ AGENTS.md(또는 CLAUDE.md)에 이 4가지 원칙을 직접 넣되, **50줄 이�
 
 - **SKILL.md frontmatter 규격**: `name`, `description` 필수 필드 + 트리거 정확도를 위한 description 최적화가 필요
 - **폴더 구조 규격**: `SKILL.md` + `scripts/`, `references/`, `assets/` 구조를 준수해야 함
-- **Codex 저장 위치 규격**: repo 스킬은 `.agents/skills/<skill-name>/`, 사용자 전역 스킬은 `~/.agents/skills/<skill-name>/`
+- **Codex 저장 위치 규격**: repo 스킬은 `.codex/skills/<skill-name>/`, 사용자 전역 스킬은 `~/.codex/skills/<skill-name>/`
 - **커스텀 에이전트 규격**: `.codex/agents/<agent-name>.toml`에 `name`, `description`, `developer_instructions` 필수
 - **Progressive disclosure**: SKILL.md 본문 500줄 이내, 대용량 참조는 `references/`로 분리
 - **Description 최적화**: skill-creator의 description optimization 루프를 거쳐야 트리거 정확도가 보장됨
@@ -171,7 +171,7 @@ AGENTS.md(또는 CLAUDE.md)에 이 4가지 원칙을 직접 넣되, **50줄 이�
 skill-creator가 보장하는 규격:
 1. SKILL.md frontmatter (name, description) 필수 필드 준수
 2. description의 트리거 정확도 최적화 (eval 기반 optimization loop)
-3. 스킬 저장 위치 `.agents/skills/<skill-name>/` 규격 준수
+3. 스킬 저장 위치 `.codex/skills/<skill-name>/` 규격 준수
 4. 폴더 구조 (SKILL.md + scripts/ + references/) 규격 준수
 5. 테스트 프롬프트 실행 및 품질 검증 완료
 ```

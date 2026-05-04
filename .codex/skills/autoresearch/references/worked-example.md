@@ -4,7 +4,7 @@
 
 ## Setup
 
-- **Target skill:** `~/.agents/skills/report-generator/SKILL.md`
+- **Target skill:** `~/.codex/skills/report-generator/SKILL.md`
 - **Test inputs:** "AI 도입 현황 보고서", "분기 매출 분석", "프로젝트 회고 문서"
 - **Evals:**
   1. .docx 파일이 에러 없이 생성되는가? [Tier 1 — 파일 존재 + validate.py]
@@ -26,7 +26,7 @@ git checkout -b autoresearch/report-generator
 ### Baseline (experiment 0): 13/20 (65%) | skill_lines: 85
 
 ```bash
-git add .agents/skills/report-generator/SKILL.md .gitignore && git commit -m "autoresearch: baseline (13/20)"
+git add .codex/skills/report-generator/SKILL.md .gitignore && git commit -m "autoresearch: baseline (13/20)"
 ```
 
 실패 패턴 분석:
