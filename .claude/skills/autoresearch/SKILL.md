@@ -1,13 +1,13 @@
 ---
 name: autoresearch
-description: Autonomously optimize any Claude Code skill by running it repeatedly, scoring outputs against evals (binary for rules + comparative for quality), mutating the skill's prompt and reference assets, and keeping improvements. Based on Karpathy's autoresearch methodology. Use this skill whenever the user mentions optimizing a skill, improving a skill, running autoresearch, making a skill better, self-improving a skill, benchmarking a skill, evaluating a skill, running evals on a skill, or any request to iteratively test and refine a skill — even if they don't use the word "autoresearch" explicitly. Also trigger on 스킬 개선, 스킬 최적화, 스킬 벤치마크, 스킬 평가. Outputs an improved target skill file, a results log, a changelog, and a research log of meaningful direction shifts.
+description: Autonomously optimize any Claude Code skill or agent system by running it repeatedly, scoring outputs against evals (binary for rules + comparative for quality), mutating any owned artifact — the skill's prompt, reference assets, and executable artifacts (scripts, agent/subagent definitions, MCP servers, hooks, harness code) — and keeping improvements. Based on Karpathy's autoresearch methodology. Use this skill whenever the user mentions optimizing a skill, improving a skill or agent, running autoresearch, making a skill or agent better, self-improving a skill, benchmarking a skill, evaluating a skill, running evals on a skill, optimizing an agent system, or any request to iteratively test and refine a skill or agent — even if they don't use the word "autoresearch" explicitly. Also trigger on 스킬 개선, 스킬 최적화, 스킬 벤치마크, 스킬 평가, 에이전트 개선, 에이전트 최적화. Outputs an improved target skill file (and any mutated executable artifacts), a results log, a changelog, and a research log of meaningful direction shifts.
 ---
 
 # Autoresearch for Skills
 
-Most skills work about 70% of the time. The other 30% you get garbage. The fix isn't to rewrite the skill from scratch. It's to let an agent run it dozens of times, score every output, and tighten the prompt until that 30% disappears.
+Most skills work about 70% of the time. The other 30% you get garbage. The fix isn't to rewrite the skill from scratch. It's to let an agent run it dozens of times, score every output, and tighten the right artifact — prompt, reference asset, or executable code — until that 30% disappears.
 
-This skill adapts Andrej Karpathy's autoresearch methodology (autonomous experimentation loops) to Claude Code skills. Instead of optimizing ML training code, we optimize skill prompts.
+This skill adapts Andrej Karpathy's autoresearch methodology (autonomous experimentation loops) to Claude Code skills and agent systems. Karpathy mutated ML training code; here we mutate every artifact a skill owns: SKILL.md prose, reference assets in `references/`, and executable artifacts the skill invokes (scripts, agent/subagent definitions, MCP servers, hooks, harness code).
 
 ---
 
@@ -48,14 +48,15 @@ If `.claude/settings.json` already exists, add only the entries you need to the 
 
 1. **Target skill(s)** — Which skill to optimize? (exact path to the target `SKILL.md`). For pipelines, list all skills in execution order.
 2. **Pipeline mode** — Single skill or multi-skill pipeline? Default: single. See `references/pipeline-guide.md` for pipeline details.
-3. **Test inputs** — 3-5 different prompts/scenarios covering different use cases. See `references/eval-guide.md` (Test prompt design section) for what makes a good test input.
-4. **Eval criteria** — Binary checks for rules (3-6) + comparative checks for quality dimensions (0-5). See `references/eval-guide.md`.
-5. **Runs per experiment** — How many times to run the skill per mutation? Default: 5.
-6. **Budget cap** — Optional. Max experiment cycles before stopping. Default: no cap.
-7. **Termination conditions** — When to stop auto mode. Default: 95%+ binary pass rate for 3 consecutive experiments. See `references/mutation-guide.md` for custom conditions.
-8. **Human review mode** — Review the first few experiments before full auto? Default: yes (first 3). Set to `skip` for fully autonomous.
+3. **Owned executable artifacts** — Every script, tool implementation, agent/subagent definition, MCP server, hook, and harness file the skill invokes. List them with paths. Default: all in-scope as L2b mutation candidates unless the user explicitly excludes them. If the skill is pure prompt + static references, this list is empty and L2b is unused. See `references/mutation-guide.md` for the L2a/L2b distinction.
+4. **Test inputs** — 3-5 different prompts/scenarios covering different use cases. See `references/eval-guide.md` (Test prompt design section) for what makes a good test input.
+5. **Eval criteria** — Binary checks for rules (3-6) + comparative checks for quality dimensions (0-5). See `references/eval-guide.md`.
+6. **Runs per experiment** — How many times to run the skill per mutation? Default: 5.
+7. **Budget cap** — Optional. Max experiment cycles before stopping. Default: no cap.
+8. **Termination conditions** — When to stop auto mode. Default: 95%+ binary pass rate for 3 consecutive experiments. See `references/mutation-guide.md` for custom conditions.
+9. **Human review mode** — Review the first few experiments before full auto? Default: yes (first 3). Set to `skip` for fully autonomous.
 
-If the user provides an `evals.json` file, use that instead of asking for items 3-4.
+If the user provides an `evals.json` file, use that instead of asking for items 4-5.
 
 ---
 
@@ -64,11 +65,12 @@ If the user provides an `evals.json` file, use that instead of asking for items 
 Before changing anything, read and understand the target skill completely.
 
 1. Read the full target skill file
-2. Read any files in `references/` that the target skill links to
-3. Identify the skill's core job, process steps, and output format
-4. Note any existing quality checks or anti-patterns already in the skill
+2. Read any files in `references/` that the target skill links to (L2a candidates)
+3. Read every executable artifact the skill invokes — scripts, tool implementations, agent/subagent definitions (e.g., `agents/openai.yaml`), MCP server code, hook scripts, harness code (L2b candidates). Use the list captured in `Step 0` item 3 as the starting set; verify by tracing every command, tool call, and subagent dispatch the skill performs.
+4. Identify the skill's core job, process steps, and output format
+5. Note any existing quality checks or anti-patterns already in the skill
 
-Do NOT skip this. You need to understand what the skill does before you can improve it.
+Do NOT skip this. You need to understand what the skill does before you can improve it. Skipping step 3 in particular causes the loop to converge on prompt-only mutations even when the real bottleneck is in the script or agent code.
 
 For **pipeline mode**, read `references/pipeline-guide.md` and map the full data flow across all skills.
 
@@ -230,7 +232,7 @@ This is the core autoresearch loop. Once started, run autonomously until stopped
 
 1. **Analyze failures.** Look at which evals fail most. Read the actual failing outputs. Identify the pattern.
 
-2. **Form a hypothesis.** Pick a mutation at the right level. See `references/mutation-guide.md` for the three mutation levels (L1: prompt rules, L2: reference assets, L3: eval calibration), good/bad mutation examples, bundled mutations, and L1→L2 transition signals.
+2. **Form a hypothesis.** Pick a mutation at the right level. See `references/mutation-guide.md` for the four mutation levels (L1: prompt rules, L2a: reference assets, L2b: executable artifacts the skill invokes, L3: eval calibration), good/bad mutation examples, bundled mutations, and transition signals. If the failure stems from execution (wrong format, build error, tool returns garbage, subagent malformed result), go to L2b — do not paper over execution bugs with more prompt rules.
 
 3. **Make the change.** Edit the target file(s) at the chosen mutation level.
 
@@ -386,7 +388,7 @@ A good autoresearch run:
 2. **Defined a run harness** — a repeatable execution procedure was written down before any experiment ran
 3. **Used appropriate eval types** — binary for rules, comparative for quality, fidelity for pipelines; at least 50% Tier 1-2 evals
 4. **Got human input early** — direction validated before going autonomous
-5. **Mutated at the right level** — L1 for rules, L2 for assets, L3 for eval calibration
+5. **Mutated at the right level** — L1 for rules, L2a for static assets, L2b for executable artifacts the skill invokes, L3 for eval calibration
 6. **Kept a complete log** — every experiment recorded with skill_lines
 7. **Used git ratcheting** — each mutation committed, discards reset, clean linear history
 8. **Maintained simplicity** — prompt didn't bloat; periodic deletion experiments ran
