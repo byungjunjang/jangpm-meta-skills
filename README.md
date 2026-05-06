@@ -49,7 +49,7 @@ blueprint → deep-dive → [구현] → autoresearch → reflect
         eval-guide.md          # 이진/비교 평가 작성 방법
         execution-guide.md     # 실행 루프 동작 방식
         logging-guide.md       # results.json / results.tsv 스키마
-        mutation-guide.md      # 프롬프트 변형 전략
+        mutation-guide.md      # 프롬프트·자산·실행 코드 변형 전략 (L1/L2a/L2b/L3)
         pipeline-guide.md      # 전체 파이프라인 개요
         worked-example.md      # 주석 포함 엔드투엔드 예시
     blueprint/

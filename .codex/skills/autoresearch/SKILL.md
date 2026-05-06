@@ -1,6 +1,6 @@
 ---
 name: autoresearch
-description: Autonomously optimize any Codex skill by running it repeatedly, scoring outputs against evals (binary for rules + comparative for quality), mutating the skill's prompt and reference assets, and keeping improvements. Based on Karpathy's autoresearch methodology. Use this skill whenever the user mentions optimizing a skill, improving a skill, running autoresearch, making a skill better, self-improving a skill, benchmarking a skill, evaluating a skill, running evals on a skill, or any request to iteratively test and refine a skill — even if they don't use the word "autoresearch" explicitly. Also trigger on 스킬 개선, 스킬 최적화, 스킬 벤치마크, 스킬 평가. Outputs an improved SKILL.md, a results log, a changelog, and a research log of meaningful direction shifts.
+description: Autonomously optimize any Codex skill or agent system by running it repeatedly, scoring outputs against evals (binary for rules + comparative for quality), mutating any owned artifact — the skill's prompt, reference assets, and executable artifacts (scripts, agent/subagent definitions like `agents/openai.yaml`, MCP servers, hooks, harness code) — and keeping improvements. Based on Karpathy's autoresearch methodology. Use this skill whenever the user mentions optimizing a skill, improving a skill or agent, running autoresearch, making a skill or agent better, self-improving a skill, benchmarking a skill, evaluating a skill, running evals on a skill, optimizing an agent system, or any request to iteratively test and refine a skill or agent — even if they don't use the word "autoresearch" explicitly. Also trigger on 스킬 개선, 스킬 최적화, 스킬 벤치마크, 스킬 평가, 에이전트 개선, 에이전트 최적화. Outputs an improved target skill file (and any mutated executable artifacts), a results log, a changelog, and a research log of meaningful direction shifts.
 metadata:
   short-description: Eval-driven optimization for Codex skills and pipelines
 ---
@@ -9,7 +9,7 @@ metadata:
 
 Most skills work about 70% of the time. The remaining 30% is where vague instructions, weak examples, and brittle rules show up. The fix is not "rewrite it from scratch." The fix is to run the skill repeatedly, score the outputs, mutate the skill, and keep only what measurably helps.
 
-This skill adapts Andrej Karpathy's autoresearch methodology to Codex skills.
+This skill adapts Andrej Karpathy's autoresearch methodology to Codex skills and agent systems. Karpathy mutated ML training code; here we mutate every artifact a skill owns: SKILL.md prose, reference assets in `references/`, and executable artifacts the skill invokes (scripts, agent/subagent definitions like `agents/openai.yaml`, MCP servers, hooks, harness code).
 
 ## The Core Job
 
@@ -17,7 +17,7 @@ Take an existing skill, define what good output looks like, then run a loop that
 
 1. Generates outputs from the skill using test inputs
 2. Scores each output against eval criteria
-3. Mutates the skill, references, templates, or UI metadata
+3. Mutates any owned artifact — SKILL.md prose (L1), reference assets in `references/` (L2a), executable artifacts the skill invokes such as scripts, agent/subagent definitions, MCP servers, hooks, harness code (L2b), or eval criteria (L3)
 4. Keeps improvements and discards regressions
 5. Repeats until a stop condition is reached
 
@@ -35,17 +35,18 @@ Do not block on a perfect spec, but do establish a minimum viable experiment con
 
 1. **Target skill(s)** — exact path to the target `SKILL.md`; for a pipeline, list all skills in order
 2. **Pipeline mode** — single skill or multi-skill pipeline; default is single
-3. **Test inputs** — 3-5 prompts or scenarios; if missing, draft a starter set and state the assumption
-4. **Eval criteria** — 3-6 binary checks plus 1-2 comparative quality checks where possible
-5. **Runs per experiment** — default: 3 for light skills, 1-2 for heavy skills, 5 only when cheap
-6. **Budget cap** — default: 5 total experiments in one Codex turn unless the user wants more
-7. **Termination conditions** — default: stop at budget cap or after 95%+ binary pass rate for 3 consecutive accepted experiments
-8. **Human review mode** — default: review baseline plus the first meaningful keep; use `skip` only when the user explicitly wants unattended mode
-9. **Execution mode** — default: sequential in the current agent; use subagents only if the user explicitly asks for delegation or parallel agent work
-10. **Run harness** — define the exact repeatable command or workflow that constitutes "running the skill"
-11. **Versioning mode** — default: `git-assisted` when a clean local git workflow is practical, otherwise `file-checkpoint`
+3. **Owned executable artifacts** — list all scripts, tool implementations, agent definitions (e.g., `agents/openai.yaml`), MCP servers, hooks, and harness files the skill invokes. Default: in-scope as L2b mutation candidates unless the user excludes them. If the skill is pure prompt + static references, the list is empty and L2b is unused. See `references/mutation-guide.md`.
+4. **Test inputs** — 3-5 prompts or scenarios; if missing, draft a starter set and state the assumption
+5. **Eval criteria** — 3-6 binary checks plus 1-2 comparative quality checks where possible
+6. **Runs per experiment** — default: 3 for light skills, 1-2 for heavy skills, 5 only when cheap
+7. **Budget cap** — default: 5 total experiments in one Codex turn unless the user wants more
+8. **Termination conditions** — default: stop at budget cap or after 95%+ binary pass rate for 3 consecutive accepted experiments
+9. **Human review mode** — default: review baseline plus the first meaningful keep; use `skip` only when the user explicitly wants unattended mode
+10. **Execution mode** — default: sequential in the current agent; use subagents only if the user explicitly asks for delegation or parallel agent work
+11. **Run harness** — define the exact repeatable command or workflow that constitutes "running the skill"
+12. **Versioning mode** — default: `git-assisted` when a clean local git workflow is practical, otherwise `file-checkpoint`
 
-If the user provides an `evals.json`, use that instead of drafting items 3-4.
+If the user provides an `evals.json`, use that instead of drafting items 4-5.
 
 Execution mode rules:
 
@@ -60,10 +61,11 @@ Execution mode rules:
 Before changing anything:
 
 1. Read the target skill file at the exact path captured in the experiment contract
-2. Read linked files in `references/` and relevant helpers in `scripts/`
-3. Identify the core job, workflow, output format, and anti-patterns
-4. Note any existing quality checks already embedded in the skill
-5. If the target is a Codex skill and `agents/openai.yaml` exists, read it and verify the UI metadata still matches the skill
+2. Read linked files in `references/` (L2a candidates) and helpers in `scripts/` (L2b candidates)
+3. Read every executable artifact the skill invokes — scripts, tool implementations, agent/subagent definitions, MCP servers, hook scripts (L2b candidates). Use the list captured in the experiment contract item 3 as the starting set; verify by tracing every command and tool call the skill performs
+4. Identify the core job, workflow, output format, and anti-patterns
+5. Note any existing quality checks already embedded in the skill
+6. If the target is a Codex skill and `agents/openai.yaml` exists, read it and verify the UI metadata still matches the skill — note that `agents/openai.yaml` is an L2b mutation candidate
 
 ## Step 2: Design the Eval Suite
 
@@ -201,10 +203,10 @@ Otherwise run a bounded batch and report results.
 Loop steps:
 
 1. Analyze failing evals and inspect real failing outputs
-2. Form one mutation hypothesis at the right level
+2. Form one mutation hypothesis at the right level (L1 prompt rules / L2a reference assets / L2b executable artifacts the skill invokes / L3 eval calibration — see `references/mutation-guide.md`). If the failure stems from execution (wrong format, build error, tool returns garbage, subagent malformed result), choose L2b directly — do not paper over execution bugs with more prompt rules.
 3. Checkpoint only the files you plan to touch
 4. Make the bounded change
-5. If a Codex skill's user-facing purpose changes, update `agents/openai.yaml` too
+5. L2b mutations explicitly include changes to `agents/openai.yaml`, helper scripts in `scripts/`, MCP server code, hook scripts, and any subagent definitions. If a Codex skill's user-facing purpose changes, update `agents/openai.yaml` too.
 6. Persist the mutation:
    - `git-assisted`: `git add <mutated-files> && git commit -m "autoresearch: [description]"`
    - `file-checkpoint`: save explicit pre-mutation copies or hashes for each touched file inside the run folder before evaluation
