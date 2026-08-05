@@ -1,9 +1,13 @@
 ---
 name: deep-dive
-description: Socratic interview skill to deepen a spec or refine an existing agent blueprint. Use when the user wants to clarify a task, stress-test design decisions, or fill gaps in a blueprint produced by /blueprint. Trigger on "/deep-dive", "deep dive", "interview me", "create a spec", "요구사항 정리", "기획서 만들어", "스펙 작성", "blueprint 심화", "설계 보강". Also trigger when the user seems unsure about design details and needs structured questioning to figure it out — e.g., requests to flesh out an idea, write a PRD, clarify scope, explore edge cases, or challenge premises in an existing design doc.
+description: Socratic interview skill to deepen a spec or refine an existing agent blueprint. Use when the user wants to clarify a task, stress-test design decisions, or fill gaps in a blueprint produced by /blueprint. Trigger on "/deep-dive", "deep dive", "interview me", "create a spec", "요구사항 정리", "기획서 만들어", "스펙 작성", "blueprint 심화", "설계 보강".
 ---
 
 # deep-dive
+
+## 사용하지 말아야 할 때
+
+요구사항이 이미 명확해서 문서만 작성하면 되는 경우에는 이 스킬을 쓰지 않는다 — 인터뷰(forcing question) 루프가 불필요하므로 바로 문서를 작성한다.
 
 An in-depth interview skill that asks **forcing questions** (not obvious ones), challenges premises, generates alternatives, and validates the final spec with a fresh-context reviewer. Produces or updates a spec/blueprint document.
 

@@ -1,9 +1,13 @@
 ---
 name: autoresearch
-description: Autonomously optimize any Claude Code skill or agent system by running it repeatedly, scoring outputs against evals (binary for rules + comparative for quality), mutating any owned artifact — the skill's prompt, reference assets, and executable artifacts (scripts, agent/subagent definitions, MCP servers, hooks, harness code) — and keeping improvements. Based on Karpathy's autoresearch methodology. Use this skill whenever the user mentions optimizing a skill, improving a skill or agent, running autoresearch, making a skill or agent better, self-improving a skill, benchmarking a skill, evaluating a skill, running evals on a skill, optimizing an agent system, or any request to iteratively test and refine a skill or agent — even if they don't use the word "autoresearch" explicitly. Also trigger on 스킬 개선, 스킬 최적화, 스킬 벤치마크, 스킬 평가, 에이전트 개선, 에이전트 최적화. Outputs an improved target skill file (and any mutated executable artifacts), a results log, a changelog, and a research log of meaningful direction shifts.
+description: Autonomously optimize a Claude Code skill or agent system by running it repeatedly, scoring outputs against evals, mutating owned artifacts (prompt, references, scripts, agent definitions), and keeping improvements. Karpathy's autoresearch methodology. Trigger when the user asks to run autoresearch, or to optimize, benchmark, or run evals on a skill or agent. Also trigger on 스킬 개선, 스킬 최적화, 스킬 벤치마크, 스킬 평가, 에이전트 개선, 에이전트 최적화.
 ---
 
 # Autoresearch for Skills
+
+## When NOT to use this skill
+
+One-off skill edits — fixing a typo, tweaking a sentence, adding a description or a small rule — do not need an experiment loop. Just edit the skill file directly. Use autoresearch only when iterative run-score-mutate evaluation is actually wanted.
 
 Most skills work about 70% of the time. The other 30% you get garbage. The fix isn't to rewrite the skill from scratch. It's to let an agent run it dozens of times, score every output, and tighten the right artifact — prompt, reference asset, or executable code — until that 30% disappears.
 
